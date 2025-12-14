@@ -1,16 +1,15 @@
-# VimWord
+﻿# VimWord
 
-A Vim emulator add-in for Microsoft Word that brings powerful Vim-style keyboard navigation and editing modes to your Word documents.
-
+A Vim emulator add-in for Microsoft Word.
 ## Features
 
-### ?? Vim Modes
+### 🎯 Vim Modes
 
 - **Normal Mode** - Navigate and execute commands with Vim keybindings
 - **Insert Mode** - Standard Word text editing
 - **Visual Mode** - Select text using Vim motions with anchor-based selection
 
-### ?? Motion Support
+### ⌨️ Motion Support
 
 #### Character Motions
 - `h` - Move left (does not wrap lines)
@@ -31,47 +30,12 @@ A Vim emulator add-in for Microsoft Word that brings powerful Vim-style keyboard
 - `$` - Move to end of line
 - `_` - Move to first non-blank character of line
 
-### ?? Visual Mode Features
-
-- **Anchor-based selection** - Selection always includes the position where Visual mode started
-- **Bidirectional selection** - Extend and shrink selection in both directions seamlessly
-- **Smart motion handling** - Motions automatically extend or shrink selection based on direction
-- **Automatic direction switching** - Active end switches when crossing the anchor point
-
-#### Visual Mode Behaviors
-- Extending with `e`, `w`, or `$` includes the target character
-- Shrinking with `b` excludes trailing whitespace
-- Pressing opposite motion (e.g., `b` after `e`) shrinks selection intelligently
-- Selection collapses to anchor when fully shrunk, ready to extend in opposite direction
-
-### ?? Mode Transitions
+### 🔧 Mode Transitions
 
 - `i` - Enter Insert mode at cursor
 - `a` - Enter Insert mode after cursor
 - `v` - Enter Visual mode (character-wise)
 - `Esc` - Return to Normal mode from any mode
-
-## Technical Highlights
-
-### Architecture
-
-- **KeyChord System** - Type-safe key combination handling with modifier support
-- **Motion Interface** - Unified motion system with directional metadata
-- **Anchor-based Visual Mode** - Proper Vim semantics for bidirectional selection
-- **No Code Duplication** - Shared utilities and unified word/WORD motion implementations
-
-### Motion Properties
-
-Each motion declares:
-- `Direction` - Forward, Backward, or Neutral
-- `IncludesTarget` - Whether Visual mode should select through the target character
-
-### Word vs WORD
-
-- **word** - Alphanumeric + underscore; punctuation is separate
-  - Example: `hello.world` has 3 words: "hello", ".", "world"
-- **WORD** - Any non-whitespace characters
-  - Example: `hello.world` is 1 WORD: "hello.world"
 
 ## Requirements
 
@@ -96,13 +60,13 @@ Coming soon...
 
 ```
 vimword/
-??? AddIn/              # VSTO add-in infrastructure
-??? UI/                 # Ribbon and user controls
-??? Vimulator/          # Core Vim emulation engine
-?   ??? Modes/         # Normal, Insert, Visual modes
-?   ??? Motions/       # Motion implementations
-?   ??? KeyChord.cs    # Keyboard input handling
-??? docs/              # Documentation
+├── AddIn/              # VSTO add-in infrastructure
+├── UI/                 # Ribbon and user controls
+├── Vimulator/          # Core Vim emulation engine
+│   ├── Modes/         # Normal, Insert, Visual modes
+│   ├── Motions/       # Motion implementations
+│   └── KeyChord.cs    # Keyboard input handling
+└── docs/              # Documentation
 ```
 
 ### Contributing
@@ -127,7 +91,7 @@ Coming soon...
 
 ## Credits
 
-Built with ?? for Vim enthusiasts who need to use Microsoft Word.
+Built with ❤️ for Vim enthusiasts who need to use Microsoft Word.
 
 ## Links
 
