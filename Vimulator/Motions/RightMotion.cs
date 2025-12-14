@@ -8,6 +8,9 @@ namespace vimword.Vimulator.Motions
     /// </summary>
     internal class RightMotion : IMotion
     {
+        public MotionDirection Direction => MotionDirection.Forward;
+        public bool IncludesTarget => false;
+
         public void Execute(Application app, bool extend = false)
         {
             var selection = app.Selection;

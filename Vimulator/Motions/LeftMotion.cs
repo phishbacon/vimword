@@ -8,6 +8,9 @@ namespace vimword.Vimulator.Motions
     /// </summary>
     internal class LeftMotion : IMotion
     {
+        public MotionDirection Direction => MotionDirection.Backward;
+        public bool IncludesTarget => false;
+
         public void Execute(Application app, bool extend = false)
         {
             var selection = app.Selection;

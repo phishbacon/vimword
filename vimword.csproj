@@ -219,21 +219,23 @@
     <Compile Include="Vimulator\Constants.cs" />
     <Compile Include="Vimulator\IModeContext.cs" />
     <Compile Include="Vimulator\IVimMachine.cs" />
+    <Compile Include="Vimulator\KeyChord.cs" />
     <Compile Include="Vimulator\Modes\InsertMode.cs" />
     <Compile Include="Vimulator\Modes\IVimMode.cs" />
     <Compile Include="Vimulator\Modes\NormalMode.cs" />
     <Compile Include="Vimulator\Modes\VisualMode.cs" />
     <Compile Include="Vimulator\ModeTransitionResult.cs" />
     <Compile Include="Vimulator\Motions\DownMotion.cs" />
+    <Compile Include="Vimulator\Motions\FirstNonBlankMotion.cs" />
     <Compile Include="Vimulator\Motions\IMotion.cs" />
     <Compile Include="Vimulator\Motions\LeftMotion.cs" />
+    <Compile Include="Vimulator\Motions\LineEndMotion.cs" />
+    <Compile Include="Vimulator\Motions\LineStartMotion.cs" />
     <Compile Include="Vimulator\Motions\RightMotion.cs" />
+    <Compile Include="Vimulator\Motions\TextCharacterHelper.cs" />
     <Compile Include="Vimulator\Motions\UpMotion.cs" />
-    <Compile Include="Vimulator\Motions\WordBackBigMotion.cs" />
     <Compile Include="Vimulator\Motions\WordBackMotion.cs" />
-    <Compile Include="Vimulator\Motions\WordEndBigMotion.cs" />
     <Compile Include="Vimulator\Motions\WordEndMotion.cs" />
-    <Compile Include="Vimulator\Motions\WordForwardBigMotion.cs" />
     <Compile Include="Vimulator\Motions\WordForwardMotion.cs" />
     <Compile Include="Vimulator\VimMachine.cs" />
     <EmbeddedResource Include="UI\RibbonManager.resx">
@@ -251,7 +253,10 @@
     <EmbeddedResource Include="UI\UserControl.resx">
       <DependentUpon>UserControl.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="COMMIT_MESSAGE.md" />
     <None Include="docs\README.md" />
+    <None Include="local-docs\CODE_DEDUPLICATION.md" />
+    <None Include="local-docs\MOTION_UNIFICATION.md" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -264,6 +269,7 @@
     <Compile Include="ThisAddIn.cs">
       <SubType>Code</SubType>
     </Compile>
+    <None Include="README.md" />
     <None Include="ThisAddIn.Designer.xml">
       <DependentUpon>ThisAddIn.cs</DependentUpon>
     </None>

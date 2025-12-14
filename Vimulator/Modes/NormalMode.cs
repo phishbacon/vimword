@@ -12,38 +12,43 @@ namespace vimword.Vimulator.Modes
     internal class NormalMode : IVimMode
     {
         private readonly Microsoft.Office.Interop.Word.Application _app;
-        private readonly Dictionary<Keys, Func<ModeTransitionResult>> _keyActions;
-        private readonly Dictionary<Keys, IMotion> _motions;
-        private readonly Dictionary<Keys, IMotion> _bigMotions;
+        private readonly Dictionary<KeyChord, Func<ModeTransitionResult>> _keyActions;
+        private readonly Dictionary<KeyChord, IMotion> _motions;
         private IModeContext _context;
 
         public NormalMode(Microsoft.Office.Interop.Word.Application app)
         {
             _app = app;
             
-            _motions = new Dictionary<Keys, IMotion>
+            _motions = new Dictionary<KeyChord, IMotion>
             {
-                [Keys.H] = new LeftMotion(),
-                [Keys.L] = new RightMotion(),
-                [Keys.K] = new UpMotion(),
-                [Keys.J] = new DownMotion(),
-                [Keys.W] = new WordForwardMotion(),
-                [Keys.B] = new WordBackMotion(),
-                [Keys.E] = new WordEndMotion()
-            };
-
-            _bigMotions = new Dictionary<Keys, IMotion>
-            {
-                [Keys.W] = new WordForwardBigMotion(),
-                [Keys.B] = new WordBackBigMotion(),
-                [Keys.E] = new WordEndBigMotion()
+                // Character motions
+                [new KeyChord(Keys.H)] = new LeftMotion(),
+                [new KeyChord(Keys.L)] = new RightMotion(),
+                [new KeyChord(Keys.K)] = new UpMotion(),
+                [new KeyChord(Keys.J)] = new DownMotion(),
+                
+                // Word motions (lowercase)
+                [new KeyChord(Keys.W)] = new WordForwardMotion(includePunctuation: false),
+                [new KeyChord(Keys.B)] = new WordBackMotion(includePunctuation: false),
+                [new KeyChord(Keys.E)] = new WordEndMotion(includePunctuation: false),
+                
+                // Word motions (uppercase/WORD - with Shift)
+                [new KeyChord(Keys.W, Constants.Modifiers.SHIFT)] = new WordForwardMotion(includePunctuation: true),
+                [new KeyChord(Keys.B, Constants.Modifiers.SHIFT)] = new WordBackMotion(includePunctuation: true),
+                [new KeyChord(Keys.E, Constants.Modifiers.SHIFT)] = new WordEndMotion(includePunctuation: true),
+                
+                // Line motions
+                [new KeyChord(Keys.D0)] = new LineStartMotion(),
+                [new KeyChord(Keys.D4, Constants.Modifiers.SHIFT)] = new LineEndMotion(),           // $ (Shift+4)
+                [new KeyChord(Keys.OemMinus, Constants.Modifiers.SHIFT)] = new FirstNonBlankMotion() // _ (Shift+-)
             };
             
-            _keyActions = new Dictionary<Keys, Func<ModeTransitionResult>>
+            _keyActions = new Dictionary<KeyChord, Func<ModeTransitionResult>>
             {
-                [Keys.I] = InsertAtCursor,
-                [Keys.A] = AppendAfterCursor,
-                [Keys.V] = EnterVisualMode
+                [new KeyChord(Keys.I)] = InsertAtCursor,
+                [new KeyChord(Keys.A)] = AppendAfterCursor,
+                [new KeyChord(Keys.V)] = EnterVisualMode
             };
         }
 
@@ -60,25 +65,16 @@ namespace vimword.Vimulator.Modes
 
         public ModeTransitionResult HandleKey(Keys key)
         {
-            Keys baseKey = key & Keys.KeyCode;
+            var chord = KeyChord.FromKeys(key);
             
             // Check for mode transitions first
-            if (_keyActions.TryGetValue(baseKey, out var action))
+            if (_keyActions.TryGetValue(chord, out var action))
             {
                 return action();
             }
 
             // Check for motions
-            bool shiftPressed = (Control.ModifierKeys & Keys.Shift) == Keys.Shift;
-            IMotion motion = null;
-
-            if (shiftPressed && _bigMotions.TryGetValue(baseKey, out motion))
-            {
-                motion.Execute(_app, extend: false);
-                return new ModeTransitionResult { Handled = true };
-            }
-
-            if (_motions.TryGetValue(baseKey, out motion))
+            if (_motions.TryGetValue(chord, out var motion))
             {
                 motion.Execute(_app, extend: false);
                 return new ModeTransitionResult { Handled = true };

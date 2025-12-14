@@ -17,14 +17,11 @@ namespace vimword.Vimulator.Modes
     internal class VisualMode : IVimMode
     {
         private readonly Microsoft.Office.Interop.Word.Application _app;
-        private readonly Dictionary<Keys, IMotion> _motions;
-        private readonly Dictionary<Keys, IMotion> _bigMotions;
+        private readonly Dictionary<KeyChord, IMotion> _motions;
         private IModeContext _context;
         
-        // Track the anchor point (where Visual mode started)
         private int _anchorPosition;
         
-        // Track which end is "active" (moving)
         private enum ActiveEnd { Start, End }
         private ActiveEnd _activeEnd;
 
@@ -32,26 +29,28 @@ namespace vimword.Vimulator.Modes
         {
             _app = app;
             
-            _motions = new Dictionary<Keys, IMotion>
+            _motions = new Dictionary<KeyChord, IMotion>
             {
                 // Character motions
-                [Keys.H] = new LeftMotion(),
-                [Keys.L] = new RightMotion(),
-                [Keys.K] = new UpMotion(),
-                [Keys.J] = new DownMotion(),
+                [new KeyChord(Keys.H)] = new LeftMotion(),
+                [new KeyChord(Keys.L)] = new RightMotion(),
+                [new KeyChord(Keys.K)] = new UpMotion(),
+                [new KeyChord(Keys.J)] = new DownMotion(),
                 
-                // word motions (lowercase)
-                [Keys.W] = new WordForwardMotion(),
-                [Keys.B] = new WordBackMotion(),
-                [Keys.E] = new WordEndMotion()
-            };
-
-            _bigMotions = new Dictionary<Keys, IMotion>
-            {
-                // WORD motions (Shift + key)
-                [Keys.W] = new WordForwardBigMotion(),
-                [Keys.B] = new WordBackBigMotion(),
-                [Keys.E] = new WordEndBigMotion()
+                // Word motions (lowercase)
+                [new KeyChord(Keys.W)] = new WordForwardMotion(includePunctuation: false),
+                [new KeyChord(Keys.B)] = new WordBackMotion(includePunctuation: false),
+                [new KeyChord(Keys.E)] = new WordEndMotion(includePunctuation: false),
+                
+                // Word motions (uppercase/WORD - with Shift)
+                [new KeyChord(Keys.W, Constants.Modifiers.SHIFT)] = new WordForwardMotion(includePunctuation: true),
+                [new KeyChord(Keys.B, Constants.Modifiers.SHIFT)] = new WordBackMotion(includePunctuation: true),
+                [new KeyChord(Keys.E, Constants.Modifiers.SHIFT)] = new WordEndMotion(includePunctuation: true),
+                
+                // Line motions
+                [new KeyChord(Keys.D0)] = new LineStartMotion(),
+                [new KeyChord(Keys.D4, Constants.Modifiers.SHIFT)] = new LineEndMotion(),
+                [new KeyChord(Keys.OemMinus, Constants.Modifiers.SHIFT)] = new FirstNonBlankMotion()
             };
         }
 
@@ -61,9 +60,8 @@ namespace vimword.Vimulator.Modes
         {
             _context = context;
 
-            // Store the anchor position when entering Visual mode
             _anchorPosition = _app.Selection.Start;
-            _activeEnd = ActiveEnd.End;  // Initially, End is active (extends forward)
+            _activeEnd = ActiveEnd.End;
 
             if (_app.Selection.Start == _app.Selection.End)
             {
@@ -78,122 +76,119 @@ namespace vimword.Vimulator.Modes
 
         public ModeTransitionResult HandleKey(Keys key)
         {
-            Keys baseKey = key & Keys.KeyCode;
-            bool shiftPressed = (Control.ModifierKeys & Keys.Shift) == Keys.Shift;
+            var chord = KeyChord.FromKeys(key);
 
-            // Determine if this is a forward or backward motion
-            bool isBackwardMotion = (baseKey == Keys.B || baseKey == Keys.H);
-            bool isForwardMotion = (baseKey == Keys.W || baseKey == Keys.E || baseKey == Keys.L);
-
-            IMotion motion = null;
-
-            // Check for Shift variant first
-            if (shiftPressed && _bigMotions.TryGetValue(baseKey, out motion))
+            if (_motions.TryGetValue(chord, out var motion))
             {
-                ExecuteMotionWithDirection(motion, isBackwardMotion, isForwardMotion);
-                return new ModeTransitionResult { Handled = true };
-            }
-
-            // Check for normal motion
-            if (_motions.TryGetValue(baseKey, out motion))
-            {
-                ExecuteMotionWithDirection(motion, isBackwardMotion, isForwardMotion);
+                ExecuteMotionWithDirection(motion);
                 return new ModeTransitionResult { Handled = true };
             }
 
             return new ModeTransitionResult { Handled = true };
         }
 
-        private void ExecuteMotionWithDirection(IMotion motion, bool isBackwardMotion, bool isForwardMotion)
+        private void ExecuteMotionWithDirection(IMotion motion)
         {
             var selection = _app.Selection;
+            var doc = selection.Document;
             
-            // Determine if we're shrinking or extending
-            // Shrinking: motion goes toward the anchor
-            // Extending: motion goes away from the anchor
-            bool isShrinking = false;
             int positionToMoveFrom;
+            bool isShrinking = false;
 
             if (_activeEnd == ActiveEnd.End)
             {
-                // End is active (selection extends forward from anchor)
-                if (isBackwardMotion)
-                {
-                    // Backward motion with End active = shrinking
-                    isShrinking = true;
-                    positionToMoveFrom = selection.End;  // Shrink from End
-                }
-                else
-                {
-                    // Forward motion with End active = extending
-                    isShrinking = false;
-                    positionToMoveFrom = selection.End;  // Extend from End
-                }
+                positionToMoveFrom = selection.End;
+                // If End is active and motion is backward, we're shrinking
+                isShrinking = motion.Direction == MotionDirection.Backward;
             }
-            else // _activeEnd == ActiveEnd.Start
+            else
             {
-                // Start is active (selection extends backward from anchor)
-                if (isForwardMotion)
-                {
-                    // Forward motion with Start active = shrinking
-                    isShrinking = true;
-                    positionToMoveFrom = selection.Start;  // Shrink from Start
-                }
-                else
-                {
-                    // Backward motion with Start active = extending
-                    isShrinking = false;
-                    positionToMoveFrom = selection.Start;  // Extend from Start
-                }
+                positionToMoveFrom = selection.Start;
+                // If Start is active and motion is forward, we're shrinking
+                isShrinking = motion.Direction == MotionDirection.Forward;
             }
 
-            // Collapse to the position we're moving from
             selection.SetRange(positionToMoveFrom, positionToMoveFrom);
             
-            // Execute the motion to get the new position
             motion.Execute(_app, extend: false);
             
-            // Get the new position after motion
             int newPosition = selection.Start;
+            
+            // When extending with motions that position ON target (e, $), add +1 to include that character
+            if (motion.IncludesTarget && _activeEnd == ActiveEnd.End && !isShrinking)
+            {
+                newPosition = selection.Start + 1;
+            }
+            
+            // When shrinking with backward motion from End, subtract 1 to exclude the character we land on
+            // This is the opposite of the +1 we do for 'e' when extending
+            if (isShrinking && _activeEnd == ActiveEnd.End && motion.Direction == MotionDirection.Backward)
+            {
+                if (newPosition > 0)
+                {
+                    newPosition = newPosition - 1;
+                }
+                
+                // If shrinking would move past the anchor, just stop at the anchor
+                if (newPosition <= _anchorPosition)
+                {
+                    newPosition = _anchorPosition;
+                }
+            }
+            
+            // Similarly for shrinking forward from Start
+            if (isShrinking && _activeEnd == ActiveEnd.Start && motion.Direction == MotionDirection.Forward)
+            {
+                // If shrinking would move past the anchor, just stop at the anchor
+                if (newPosition >= _anchorPosition)
+                {
+                    newPosition = _anchorPosition;
+                }
+            }
 
-            // Apply the new selection based on whether we're shrinking or extending
             if (_activeEnd == ActiveEnd.End)
             {
-                // End is/was active
                 if (newPosition < _anchorPosition)
                 {
-                    // Crossed the anchor - switch to Start being active
+                    _activeEnd = ActiveEnd.Start;
+                    selection.SetRange(newPosition, _anchorPosition);
+                }
+                else if (newPosition == _anchorPosition)
+                {
+                    // Collapsed at anchor - next backward motion should extend Start backward
                     _activeEnd = ActiveEnd.Start;
                     selection.SetRange(newPosition, _anchorPosition);
                 }
                 else
                 {
-                    // Didn't cross anchor - Start at anchor, End at new position
                     selection.SetRange(_anchorPosition, newPosition);
                 }
             }
-            else // _activeEnd == ActiveEnd.Start
+            else
             {
-                // Start is/was active
                 if (newPosition > _anchorPosition)
                 {
-                    // Crossed the anchor - switch to End being active
+                    _activeEnd = ActiveEnd.End;
+                    selection.SetRange(_anchorPosition, newPosition);
+                }
+                else if (newPosition == _anchorPosition)
+                {
+                    // Collapsed at anchor - next forward motion should extend End forward
                     _activeEnd = ActiveEnd.End;
                     selection.SetRange(_anchorPosition, newPosition);
                 }
                 else
                 {
-                    // Didn't cross anchor - Start at new position, End at anchor
                     selection.SetRange(newPosition, _anchorPosition);
                 }
             }
 
-            // Update active end based on motion direction (for next iteration)
-            if (isForwardMotion && newPosition > _anchorPosition)
+            // Update active end based on motion direction
+            if (motion.Direction == MotionDirection.Forward && newPosition > _anchorPosition)
             {
                 _activeEnd = ActiveEnd.End;
             }
-            else if (isBackwardMotion && newPosition < _anchorPosition)
+            else if (motion.Direction == MotionDirection.Backward && newPosition < _anchorPosition)
             {
                 _activeEnd = ActiveEnd.Start;
             }

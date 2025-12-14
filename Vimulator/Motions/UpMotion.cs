@@ -7,6 +7,9 @@ namespace vimword.Vimulator.Motions
     /// </summary>
     internal class UpMotion : IMotion
     {
+        public MotionDirection Direction => MotionDirection.Neutral;
+        public bool IncludesTarget => false;
+
         public void Execute(Application app, bool extend = false)
         {
             var moveType = extend ? WdMovementType.wdExtend : WdMovementType.wdMove;

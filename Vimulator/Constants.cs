@@ -33,5 +33,14 @@ namespace vimword.Vimulator
         private const string VisualMode = "VISUAL";
         private const string VisualLineMode = "VISUAL-LINE";
         private const string CommandMode = "COMMAND";
+
+        [Flags]
+        public enum Modifiers
+        {
+            NONE = 0,
+            SHIFT = 1,
+            CONTROL = 2,
+            ALT = 4
+        }
     }
 }
