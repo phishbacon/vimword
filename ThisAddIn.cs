@@ -14,16 +14,17 @@ using UserControl = vimword.Src.VimStatusDisplay.UserControl;
 
 namespace vimword
 {
+    /// <summary>
+    /// Main entry point for the VSTO Word Add-in.
+    /// Handles lifecycle, dependency injection setup, and UI initialization.
+    /// </summary>
     public partial class ThisAddIn
     {
         private ServiceProvider _services;
         private KeyboardListener _keyboardListener;
-
         private IVimMachine _vimMachine;
-
         private UserControl _vimStatusDisplay;
         public CustomTaskPane _vimStatusPane;
-
 
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
@@ -34,11 +35,16 @@ namespace vimword
             _vimStatusPane.VisibleChanged += new EventHandler(VimStatusPane_VisibleChanged);
             _vimStatusPane.Visible = true;
 
+            // Setup dependency injection container
             ServiceCollection services = new ServiceCollection();
 
+            services.AddSingleton<Microsoft.Office.Interop.Word.Application>(Globals.ThisAddIn.Application);
+            
+            // Register all Vim modes - injected as IEnumerable<IVimMode>
             services.AddSingleton<IVimMode, InsertMode>();
             services.AddSingleton<IVimMode, NormalMode>();
             services.AddSingleton<IVimMode, VisualMode>();
+            
             services.AddSingleton<IVimMachine, VimMachine>();
             services.AddSingleton<KeyboardListener>();
 
@@ -48,12 +54,15 @@ namespace vimword
             _keyboardListener = _services.GetRequiredService<KeyboardListener>();
             _keyboardListener.Install();
 
-            _vimMachine.ModeChanged += VimMachine_ModeChanged;
+            _vimMachine.PropertyChanged += VimMachine_PropertyChanged;
         }
 
-        private void VimMachine_ModeChanged(object sender, PropertyChangedEventArgs e)
+        private void VimMachine_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            _vimStatusDisplay.vimModeText.Text = Constants.ModeText[(int)_vimMachine.CurrentMode];
+            if (e.PropertyName == nameof(IVimMachine.CurrentMode))
+            {
+                _vimStatusDisplay.vimModeText.Text = Constants.ModeText[(int)_vimMachine.CurrentMode];
+            }
         }
 
         private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
@@ -77,10 +86,6 @@ namespace vimword
 
         #region VSTO generated code
 
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
         private void InternalStartup()
         {
             this.Startup += new System.EventHandler(ThisAddIn_Startup);

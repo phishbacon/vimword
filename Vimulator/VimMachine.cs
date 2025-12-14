@@ -13,49 +13,51 @@ using UserControl = vimword.Src.VimStatusDisplay.UserControl;
 
 namespace vimword.Vimulator
 {
-    internal class VimMachine : IVimMachine
+    /// <summary>
+    /// Core Vim state machine that manages mode transitions and delegates key handling.
+    /// </summary>
+    internal class VimMachine : IVimMachine, IModeContext
     {
         private Constants.Modes _mode;
-        private readonly IEnumerable<IVimMode> _modes;
-        private event PropertyChangedEventHandler _modeChanged;
+        private readonly Dictionary<Constants.Modes, IVimMode> _modeMap;
+        private readonly Microsoft.Office.Interop.Word.Application _app;
+        private IVimMode _currentModeInstance;
 
+        #region INotifyPropertyChanged Implementation
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = "")
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        #endregion
+
+        #region IVimMachine Implementation
+
+        /// <summary>
+        /// Gets or sets the current Vim mode. Setting triggers mode lifecycle events and UI notifications.
+        /// </summary>
         public Constants.Modes CurrentMode
         {
-            get
-            {
-                return _mode; 
-            }
+            get => _mode;
             set
             {
                 if (_mode != value)
                 {
+                    _currentModeInstance?.OnExit();
                     _mode = value;
+                    _currentModeInstance = _modeMap[_mode];
+                    _currentModeInstance.OnEnter(this);
                     OnPropertyChanged();
                 }
             }
         }
 
-        public PropertyChangedEventHandler ModeChanged
-        {
-            get
-            {
-                return _modeChanged;
-            } 
-            set
-            {
-                if (_modeChanged != value)
-                {
-                    _modeChanged = value;
-                }
-            }
-        }
-
-        public VimMachine(IEnumerable<IVimMode> modes)
-        {
-            _mode = Constants.Modes.NORMAL;
-            _modes = modes;
-        }
-
+        /// <summary>
+        /// Handles a key press by routing to the current mode and managing transitions.
+        /// </summary>
         public bool HandleKey(Keys key)
         {
             if (key == Keys.Escape)
@@ -63,27 +65,43 @@ namespace vimword.Vimulator
                 CurrentMode = Constants.Modes.NORMAL;
                 return true;
             }
-            switch (_mode)
+
+            ModeTransitionResult result = _currentModeInstance.HandleKey(key);
+
+            if (result.NextMode.HasValue)
             {
-                case Constants.Modes.NORMAL:
-                    switch (key)
-                    {
-                        case Keys.I:
-                            CurrentMode = Constants.Modes.INSERT;
-                            return true;
-                        case Keys.V:
-                            CurrentMode = Constants.Modes.VISUAL;
-                            return true;
-                        default:
-                            return _modes.First(m => m.Mode == _mode).HandleKey(key);
-                    }
+                CurrentMode = result.NextMode.Value;
+                result.PostTransitionAction?.Invoke();
             }
-            return _modes.First(m => m.Mode == _mode).HandleKey(key);
+
+            return result.Handled;
         }
 
-        public void OnPropertyChanged([CallerMemberName] string propertyName = "")
+        #endregion
+
+        #region IModeContext Implementation
+
+        public Microsoft.Office.Interop.Word.Application Application => _app;
+
+        public void RequestModeChange(Constants.Modes mode, Action postTransition = null)
         {
-            _modeChanged.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            CurrentMode = mode;
+            postTransition?.Invoke();
         }
+
+        #endregion
+
+        #region Constructor
+
+        public VimMachine(IEnumerable<IVimMode> modes, Microsoft.Office.Interop.Word.Application app)
+        {
+            _app = app;
+            _modeMap = modes.ToDictionary(m => m.Mode);
+            _mode = Constants.Modes.NORMAL;
+            _currentModeInstance = _modeMap[_mode];
+            _currentModeInstance.OnEnter(this);
+        }
+
+        #endregion
     }
 }

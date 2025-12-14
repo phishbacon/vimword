@@ -217,11 +217,24 @@
       <DependentUpon>UserControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Vimulator\Constants.cs" />
+    <Compile Include="Vimulator\IModeContext.cs" />
     <Compile Include="Vimulator\IVimMachine.cs" />
     <Compile Include="Vimulator\Modes\InsertMode.cs" />
     <Compile Include="Vimulator\Modes\IVimMode.cs" />
     <Compile Include="Vimulator\Modes\NormalMode.cs" />
     <Compile Include="Vimulator\Modes\VisualMode.cs" />
+    <Compile Include="Vimulator\ModeTransitionResult.cs" />
+    <Compile Include="Vimulator\Motions\DownMotion.cs" />
+    <Compile Include="Vimulator\Motions\IMotion.cs" />
+    <Compile Include="Vimulator\Motions\LeftMotion.cs" />
+    <Compile Include="Vimulator\Motions\RightMotion.cs" />
+    <Compile Include="Vimulator\Motions\UpMotion.cs" />
+    <Compile Include="Vimulator\Motions\WordBackBigMotion.cs" />
+    <Compile Include="Vimulator\Motions\WordBackMotion.cs" />
+    <Compile Include="Vimulator\Motions\WordEndBigMotion.cs" />
+    <Compile Include="Vimulator\Motions\WordEndMotion.cs" />
+    <Compile Include="Vimulator\Motions\WordForwardBigMotion.cs" />
+    <Compile Include="Vimulator\Motions\WordForwardMotion.cs" />
     <Compile Include="Vimulator\VimMachine.cs" />
     <EmbeddedResource Include="UI\RibbonManager.resx">
       <DependentUpon>RibbonManager.cs</DependentUpon>
@@ -238,6 +251,7 @@
     <EmbeddedResource Include="UI\UserControl.resx">
       <DependentUpon>UserControl.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="docs\README.md" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

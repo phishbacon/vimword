@@ -1,13 +1,19 @@
-﻿using System;
+﻿using Microsoft.Office.Interop.Word;
+using System;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using vimword.Vimulator;
 
 namespace vimword.AddIn
 {
+    /// <summary>
+    /// Keyboard hook that intercepts key presses before Word processes them.
+    /// Uses Windows API hooks at the thread level.
+    /// </summary>
     public class KeyboardListener
     {
         private delegate IntPtr KeyboardProc(int code, IntPtr wParam, IntPtr lParam);
+        
         private static IntPtr _hookID = IntPtr.Zero;
         private readonly KeyboardListener _instance;
         private static KeyboardProc _proc;
@@ -46,7 +52,6 @@ namespace vimword.AddIn
             if (_instance != null && nCode == HC_ACTION && BindingFunctions.IsKeyDown((Keys)wParam))
             {
                 Keys key = (Keys)wParam;
-
                 bool handled = _instance._vimMachine.HandleKey(key);
 
                 if (handled)

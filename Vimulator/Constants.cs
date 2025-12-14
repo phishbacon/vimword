@@ -6,8 +6,14 @@ using System.Threading.Tasks;
 
 namespace vimword.Vimulator
 {
+    /// <summary>
+    /// Global constants for the Vim emulator.
+    /// </summary>
     public static class Constants
     {
+        /// <summary>
+        /// Vim modes that change how key presses are interpreted.
+        /// </summary>
         public enum Modes
         {
             NORMAL,
@@ -17,6 +23,9 @@ namespace vimword.Vimulator
             COMMAND
         }
 
+        /// <summary>
+        /// Display text for each mode shown in status bar.
+        /// </summary>
         public static string[] ModeText = { NormalMode, InsertMode, VisualMode, VisualLineMode, CommandMode };
 
         private const string NormalMode = "NORMAL";
