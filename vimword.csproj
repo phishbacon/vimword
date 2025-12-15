@@ -253,7 +253,6 @@
     <EmbeddedResource Include="UI\UserControl.resx">
       <DependentUpon>UserControl.cs</DependentUpon>
     </EmbeddedResource>
-    <None Include="COMMIT_MESSAGE.md" />
     <None Include="docs\README.md" />
     <None Include="local-docs\CODE_DEDUPLICATION.md" />
     <None Include="local-docs\MOTION_UNIFICATION.md" />

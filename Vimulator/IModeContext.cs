@@ -18,5 +18,11 @@ namespace vimword.Vimulator
         /// Requests a mode change with optional post-transition action.
         /// </summary>
         void RequestModeChange(Constants.Modes mode, Action postTransition = null);
+
+        /// <summary>
+        /// Gets or sets the current key buffer (e.g., "5w" for count + motion).
+        /// Used to display pending keys in the status bar.
+        /// </summary>
+        string KeyBuffer { get; set; }
     }
 }

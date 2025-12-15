@@ -11,7 +11,7 @@ namespace vimword.Vimulator.Motions
         public MotionDirection Direction => MotionDirection.Neutral;
         public bool IncludesTarget => false;
 
-        public void Execute(Application app, bool extend = false)
+        public void Execute(Application app, bool extend = false, int count = 1)
         {
             var selection = app.Selection;
             var doc = selection.Document;
@@ -50,6 +50,7 @@ namespace vimword.Vimulator.Motions
             }
             
             // Move to that position
+            // Note: count doesn't affect this motion
             selection.Start = pos;
             selection.End = pos;
         }

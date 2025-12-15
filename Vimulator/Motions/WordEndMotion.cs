@@ -19,40 +19,52 @@ namespace vimword.Vimulator.Motions
             _includePunctuation = includePunctuation;
         }
 
-        public void Execute(Application app, bool extend = false)
+        public void Execute(Application app, bool extend = false, int count = 1)
         {
-            var selection = app.Selection;
-            var doc = selection.Document;
-            var docEnd = doc.Range().End;
-            
-            var pos = extend ? selection.End : selection.Start;
-
-            if (pos >= docEnd - 1)
+            // Execute the motion count times
+            for (int i = 0; i < count; i++)
             {
-                return;
-            }
+                var selection = app.Selection;
+                var doc = selection.Document;
+                var docEnd = doc.Range().End;
+                
+                var pos = extend ? selection.End : selection.Start;
 
-            if (_includePunctuation)
-            {
-                // WORD motion: simpler logic, just non-whitespace
-                bool atEndOfWord = false;
-                if (pos + 1 < docEnd)
+                if (pos >= docEnd - 1)
                 {
-                    atEndOfWord = !TextCharacterHelper.IsWhitespace(doc, pos) && TextCharacterHelper.IsWhitespace(doc, pos + 1);
+                    break; // Can't move further
                 }
 
-                if (atEndOfWord || TextCharacterHelper.IsWhitespace(doc, pos))
+                if (_includePunctuation)
                 {
-                    pos++;
-
-                    while (pos < docEnd && TextCharacterHelper.IsWhitespace(doc, pos))
+                    // WORD motion: simpler logic, just non-whitespace
+                    bool atEndOfWord = false;
+                    if (pos + 1 < docEnd)
                     {
-                        pos++;
+                        atEndOfWord = !TextCharacterHelper.IsWhitespace(doc, pos) && TextCharacterHelper.IsWhitespace(doc, pos + 1);
                     }
 
-                    if (pos >= docEnd)
+                    if (atEndOfWord || TextCharacterHelper.IsWhitespace(doc, pos))
                     {
-                        pos = docEnd - 1;
+                        pos++;
+
+                        while (pos < docEnd && TextCharacterHelper.IsWhitespace(doc, pos))
+                        {
+                            pos++;
+                        }
+
+                        if (pos >= docEnd)
+                        {
+                            pos = docEnd - 1;
+                        }
+                        else
+                        {
+                            while (pos < docEnd && !TextCharacterHelper.IsWhitespace(doc, pos))
+                            {
+                                pos++;
+                            }
+                            pos--;
+                        }
                     }
                     else
                     {
@@ -65,105 +77,173 @@ namespace vimword.Vimulator.Motions
                 }
                 else
                 {
-                    while (pos < docEnd && !TextCharacterHelper.IsWhitespace(doc, pos))
+                    // word motion: punctuation is separate
+                    bool onWordChar = TextCharacterHelper.IsWordChar(doc, pos);
+                    bool onPunct = TextCharacterHelper.IsPunctuation(doc, pos);
+                    bool onWhitespace = TextCharacterHelper.IsWhitespace(doc, pos);
+
+                    if (onWhitespace)
                     {
+                        // On whitespace - skip to next word and find its end
                         pos++;
-                    }
-                    pos--;
-                }
-            }
-            else
-            {
-                // word motion: punctuation is separate
-                bool atEndOfSequence = false;
-                if (pos + 1 < docEnd)
-                {
-                    bool currentIsWord = TextCharacterHelper.IsWordChar(doc, pos);
-                    bool currentIsPunct = TextCharacterHelper.IsPunctuation(doc, pos);
-                    bool nextIsWhitespace = TextCharacterHelper.IsWhitespace(doc, pos + 1);
-                    bool nextIsDifferentType = false;
-                    
-                    if (!nextIsWhitespace && pos + 1 < docEnd)
-                    {
-                        bool nextIsWord = TextCharacterHelper.IsWordChar(doc, pos + 1);
-                        nextIsDifferentType = (currentIsWord && !nextIsWord) || (currentIsPunct && nextIsWord);
-                    }
-                    
-                    atEndOfSequence = nextIsWhitespace || nextIsDifferentType;
-                }
-
-                bool onWordChar = TextCharacterHelper.IsWordChar(doc, pos);
-                bool onPunct = TextCharacterHelper.IsPunctuation(doc, pos);
-
-                if (atEndOfSequence || TextCharacterHelper.IsWhitespace(doc, pos))
-                {
-                    pos++;
-
-                    while (pos < docEnd && TextCharacterHelper.IsWhitespace(doc, pos))
-                    {
-                        pos++;
-                    }
-
-                    if (pos >= docEnd)
-                    {
-                        pos = docEnd - 1;
-                    }
-                    else
-                    {
-                        bool nextIsWordChar = TextCharacterHelper.IsWordChar(doc, pos);
-
-                        if (nextIsWordChar)
+                        while (pos < docEnd && TextCharacterHelper.IsWhitespace(doc, pos))
                         {
-                            while (pos < docEnd && TextCharacterHelper.IsWordChar(doc, pos))
+                            pos++;
+                        }
+
+                        if (pos >= docEnd)
+                        {
+                            pos = docEnd - 1;
+                        }
+                        else
+                        {
+                            bool nextIsWordChar = TextCharacterHelper.IsWordChar(doc, pos);
+                            if (nextIsWordChar)
+                            {
+                                while (pos < docEnd && TextCharacterHelper.IsWordChar(doc, pos))
+                                {
+                                    pos++;
+                                }
+                            }
+                            else
+                            {
+                                while (pos < docEnd && TextCharacterHelper.IsPunctuation(doc, pos))
+                                {
+                                    pos++;
+                                }
+                            }
+                            pos--;
+                        }
+                    }
+                    else if (onWordChar)
+                    {
+                        // On word char - check if we're at the last char of this word
+                        bool atLastChar = false;
+                        if (pos + 1 < docEnd)
+                        {
+                            atLastChar = !TextCharacterHelper.IsWordChar(doc, pos + 1);
+                        }
+                        else
+                        {
+                            atLastChar = true; // At document end
+                        }
+
+                        if (atLastChar)
+                        {
+                            // Already at end of current word, move to end of next word
+                            pos++;
+                            while (pos < docEnd && TextCharacterHelper.IsWhitespace(doc, pos))
                             {
                                 pos++;
+                            }
+
+                            if (pos >= docEnd)
+                            {
+                                pos = docEnd - 1;
+                            }
+                            else
+                            {
+                                bool nextIsWordChar = TextCharacterHelper.IsWordChar(doc, pos);
+                                if (nextIsWordChar)
+                                {
+                                    while (pos < docEnd && TextCharacterHelper.IsWordChar(doc, pos))
+                                    {
+                                        pos++;
+                                    }
+                                }
+                                else
+                                {
+                                    while (pos < docEnd && TextCharacterHelper.IsPunctuation(doc, pos))
+                                    {
+                                        pos++;
+                                    }
+                                }
+                                pos--;
                             }
                         }
                         else
                         {
+                            // Not at end yet - move to end of current word
+                            while (pos < docEnd && TextCharacterHelper.IsWordChar(doc, pos))
+                            {
+                                pos++;
+                            }
+                            pos--;
+                        }
+                    }
+                    else if (onPunct)
+                    {
+                        // On punctuation - check if we're at the last char of this punct sequence
+                        bool atLastChar = false;
+                        if (pos + 1 < docEnd)
+                        {
+                            atLastChar = !TextCharacterHelper.IsPunctuation(doc, pos + 1);
+                        }
+                        else
+                        {
+                            atLastChar = true;
+                        }
+
+                        if (atLastChar)
+                        {
+                            // Already at end, move to end of next word/punct
+                            pos++;
+                            while (pos < docEnd && TextCharacterHelper.IsWhitespace(doc, pos))
+                            {
+                                pos++;
+                            }
+
+                            if (pos >= docEnd)
+                            {
+                                pos = docEnd - 1;
+                            }
+                            else
+                            {
+                                bool nextIsWordChar = TextCharacterHelper.IsWordChar(doc, pos);
+                                if (nextIsWordChar)
+                                {
+                                    while (pos < docEnd && TextCharacterHelper.IsWordChar(doc, pos))
+                                    {
+                                        pos++;
+                                    }
+                                }
+                                else
+                                {
+                                    while (pos < docEnd && TextCharacterHelper.IsPunctuation(doc, pos))
+                                    {
+                                        pos++;
+                                    }
+                                }
+                                pos--;
+                            }
+                        }
+                        else
+                        {
+                            // Not at end yet - move to end of current punct sequence
                             while (pos < docEnd && TextCharacterHelper.IsPunctuation(doc, pos))
                             {
                                 pos++;
                             }
+                            pos--;
                         }
-
-                        pos--;
                     }
                 }
-                else if (onWordChar || onPunct)
+
+                int startPos = extend ? selection.End : selection.Start;
+                if (pos < startPos)
                 {
-                    if (onWordChar)
-                    {
-                        while (pos < docEnd && TextCharacterHelper.IsWordChar(doc, pos))
-                        {
-                            pos++;
-                        }
-                    }
-                    else
-                    {
-                        while (pos < docEnd && TextCharacterHelper.IsPunctuation(doc, pos))
-                        {
-                            pos++;
-                        }
-                    }
-                    pos--;
+                    pos = startPos;
                 }
-            }
 
-            int startPos = extend ? selection.End : selection.Start;
-            if (pos < startPos)
-            {
-                pos = startPos;
-            }
-
-            if (extend)
-            {
-                selection.End = pos + 1;
-            }
-            else
-            {
-                selection.Start = pos;
-                selection.End = pos;
+                if (extend)
+                {
+                    selection.End = pos + 1;
+                }
+                else
+                {
+                    selection.Start = pos;
+                    selection.End = pos;
+                }
             }
         }
     }

@@ -38,6 +38,7 @@ namespace vimword.Vimulator.Motions
         /// </summary>
         /// <param name="app">Word application instance</param>
         /// <param name="extend">Whether to extend selection (true for Visual mode, false for Normal mode)</param>
-        void Execute(Application app, bool extend = false);
+        /// <param name="count">Number of times to execute the motion (default 1)</param>
+        void Execute(Application app, bool extend = false, int count = 1);
     }
 }

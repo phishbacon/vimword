@@ -55,6 +55,15 @@ namespace vimword
             _keyboardListener.Install();
 
             _vimMachine.PropertyChanged += VimMachine_PropertyChanged;
+            
+            // Update cursor position when user clicks or moves cursor in Word
+            this.Application.WindowSelectionChange += Application_WindowSelectionChange;
+        }
+        
+        private void Application_WindowSelectionChange(Selection sel)
+        {
+            // Update cursor position in status bar when selection changes
+            _vimMachine.UpdateCursorPosition();
         }
 
         private void VimMachine_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -62,6 +71,19 @@ namespace vimword
             if (e.PropertyName == nameof(IVimMachine.CurrentMode))
             {
                 _vimStatusDisplay.vimModeText.Text = Constants.ModeText[(int)_vimMachine.CurrentMode];
+            }
+            else if (e.PropertyName == nameof(IVimMachine.KeyBuffer))
+            {
+                // Update the keys label with the current key buffer (e.g., "5w")
+                _vimStatusDisplay.keys.Text = _vimMachine.KeyBuffer;
+            }
+            else if (e.PropertyName == nameof(IVimMachine.CurrentLine))
+            {
+                _vimStatusDisplay.lineLabel.Text = _vimMachine.CurrentLine.ToString();
+            }
+            else if (e.PropertyName == nameof(IVimMachine.CurrentColumn))
+            {
+                _vimStatusDisplay.colLabel.Text = _vimMachine.CurrentColumn.ToString();
             }
         }
 

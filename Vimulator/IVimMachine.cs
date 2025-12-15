@@ -25,5 +25,26 @@ namespace vimword.Vimulator
         /// Returns true if handled, false to pass to Word.
         /// </summary>
         bool HandleKey(Keys key);
+        
+        /// <summary>
+        /// Gets or sets the current key buffer to display in UI (e.g., "5w").
+        /// </summary>
+        string KeyBuffer { get; set; }
+        
+        /// <summary>
+        /// Gets the current line number (1-based).
+        /// </summary>
+        int CurrentLine { get; }
+        
+        /// <summary>
+        /// Gets the current column number (1-based).
+        /// </summary>
+        int CurrentColumn { get; }
+        
+        /// <summary>
+        /// Updates the cursor position from the Word application.
+        /// Fires PropertyChanged for CurrentLine and CurrentColumn.
+        /// </summary>
+        void UpdateCursorPosition();
     }
 }

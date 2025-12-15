@@ -19,70 +19,74 @@ namespace vimword.Vimulator.Motions
             _includePunctuation = includePunctuation;
         }
 
-        public void Execute(Application app, bool extend = false)
+        public void Execute(Application app, bool extend = false, int count = 1)
         {
-            var selection = app.Selection;
-            var doc = selection.Document;
-            var docEnd = doc.Range().End;
-            
-            var pos = extend ? selection.End : selection.Start;
-
-            if (pos >= docEnd - 1)
+            // Execute the motion count times
+            for (int i = 0; i < count; i++)
             {
-                return;
-            }
+                var selection = app.Selection;
+                var doc = selection.Document;
+                var docEnd = doc.Range().End;
+                
+                var pos = extend ? selection.End : selection.Start;
 
-            if (_includePunctuation)
-            {
-                // WORD motion: punctuation is part of the word
-                // Skip current non-whitespace sequence
-                while (pos < docEnd && !TextCharacterHelper.IsWhitespace(doc, pos))
+                if (pos >= docEnd - 1)
                 {
-                    pos++;
+                    break; // Can't move further
                 }
 
-                // Skip whitespace to start of next WORD
-                while (pos < docEnd && TextCharacterHelper.IsWhitespace(doc, pos))
+                if (_includePunctuation)
                 {
-                    pos++;
-                }
-            }
-            else
-            {
-                // word motion: punctuation is separate
-                bool startOnWord = TextCharacterHelper.IsWordChar(doc, pos);
-                bool startOnPunct = TextCharacterHelper.IsPunctuation(doc, pos);
+                    // WORD motion: punctuation is part of the word
+                    // Skip current non-whitespace sequence
+                    while (pos < docEnd && !TextCharacterHelper.IsWhitespace(doc, pos))
+                    {
+                        pos++;
+                    }
 
-                if (startOnWord)
-                {
-                    while (pos < docEnd && TextCharacterHelper.IsWordChar(doc, pos))
+                    // Skip whitespace to start of next WORD
+                    while (pos < docEnd && TextCharacterHelper.IsWhitespace(doc, pos))
                     {
                         pos++;
                     }
                 }
-                else if (startOnPunct)
+                else
                 {
-                    while (pos < docEnd && TextCharacterHelper.IsPunctuation(doc, pos))
+                    // word motion: punctuation is separate
+                    bool startOnWord = TextCharacterHelper.IsWordChar(doc, pos);
+                    bool startOnPunct = TextCharacterHelper.IsPunctuation(doc, pos);
+
+                    if (startOnWord)
+                    {
+                        while (pos < docEnd && TextCharacterHelper.IsWordChar(doc, pos))
+                        {
+                            pos++;
+                        }
+                    }
+                    else if (startOnPunct)
+                    {
+                        while (pos < docEnd && TextCharacterHelper.IsPunctuation(doc, pos))
+                        {
+                            pos++;
+                        }
+                    }
+
+                    // Skip whitespace to start of next word/punctuation
+                    while (pos < docEnd && TextCharacterHelper.IsWhitespace(doc, pos))
                     {
                         pos++;
                     }
                 }
 
-                // Skip whitespace to start of next word/punctuation
-                while (pos < docEnd && TextCharacterHelper.IsWhitespace(doc, pos))
+                if (extend)
                 {
-                    pos++;
+                    selection.End = pos;
                 }
-            }
-
-            if (extend)
-            {
-                selection.End = pos;
-            }
-            else
-            {
-                selection.Start = pos;
-                selection.End = pos;
+                else
+                {
+                    selection.Start = pos;
+                    selection.End = pos;
+                }
             }
         }
     }

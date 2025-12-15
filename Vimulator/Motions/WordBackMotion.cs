@@ -19,115 +19,119 @@ namespace vimword.Vimulator.Motions
             _includePunctuation = includePunctuation;
         }
 
-        public void Execute(Application app, bool extend = false)
+        public void Execute(Application app, bool extend = false, int count = 1)
         {
-            var selection = app.Selection;
-            var doc = selection.Document;
-            
-            if (extend)
+            // Execute the motion count times
+            for (int i = 0; i < count; i++)
             {
-                int originalEnd = selection.End;
-                var pos = selection.Start;
-
-                if (pos <= 0)
+                var selection = app.Selection;
+                var doc = selection.Document;
+                
+                if (extend)
                 {
-                    return;
-                }
+                    int originalEnd = selection.End;
+                    var pos = selection.Start;
 
-                pos--;
+                    if (pos <= 0)
+                    {
+                        break; // Can't move further
+                    }
 
-                while (pos > 0 && TextCharacterHelper.IsWhitespace(doc, pos))
-                {
                     pos--;
-                }
 
-                if (_includePunctuation)
-                {
-                    // WORD motion: skip all non-whitespace
-                    while (pos > 0 && !TextCharacterHelper.IsWhitespace(doc, pos))
+                    while (pos > 0 && TextCharacterHelper.IsWhitespace(doc, pos))
                     {
                         pos--;
                     }
-                }
-                else
-                {
-                    // word motion: punctuation is separate
-                    bool onWord = TextCharacterHelper.IsWordChar(doc, pos);
 
-                    if (onWord)
+                    if (_includePunctuation)
                     {
-                        while (pos > 0 && TextCharacterHelper.IsWordChar(doc, pos))
+                        // WORD motion: skip all non-whitespace
+                        while (pos > 0 && !TextCharacterHelper.IsWhitespace(doc, pos))
                         {
                             pos--;
                         }
                     }
                     else
                     {
-                        while (pos > 0 && TextCharacterHelper.IsPunctuation(doc, pos))
+                        // word motion: punctuation is separate
+                        bool onWord = TextCharacterHelper.IsWordChar(doc, pos);
+
+                        if (onWord)
                         {
-                            pos--;
+                            while (pos > 0 && TextCharacterHelper.IsWordChar(doc, pos))
+                            {
+                                pos--;
+                            }
+                        }
+                        else
+                        {
+                            while (pos > 0 && TextCharacterHelper.IsPunctuation(doc, pos))
+                            {
+                                pos--;
+                            }
                         }
                     }
-                }
 
-                if (pos > 0 || (pos == 0 && TextCharacterHelper.IsWhitespace(doc, 0)))
-                {
-                    pos++;
-                }
-
-                selection.SetRange(pos, originalEnd);
-            }
-            else
-            {
-                var pos = selection.Start;
-
-                if (pos <= 0)
-                {
-                    return;
-                }
-
-                pos--;
-
-                while (pos > 0 && TextCharacterHelper.IsWhitespace(doc, pos))
-                {
-                    pos--;
-                }
-
-                if (_includePunctuation)
-                {
-                    // WORD motion
-                    while (pos > 0 && !TextCharacterHelper.IsWhitespace(doc, pos))
+                    if (pos > 0 || (pos == 0 && TextCharacterHelper.IsWhitespace(doc, 0)))
                     {
-                        pos--;
+                        pos++;
                     }
+
+                    selection.SetRange(pos, originalEnd);
                 }
                 else
                 {
-                    // word motion
-                    bool onWord = TextCharacterHelper.IsWordChar(doc, pos);
+                    var pos = selection.Start;
 
-                    if (onWord)
+                    if (pos <= 0)
                     {
-                        while (pos > 0 && TextCharacterHelper.IsWordChar(doc, pos))
+                        break;
+                    }
+
+                    pos--;
+
+                    while (pos > 0 && TextCharacterHelper.IsWhitespace(doc, pos))
+                    {
+                        pos--;
+                    }
+
+                    if (_includePunctuation)
+                    {
+                        // WORD motion
+                        while (pos > 0 && !TextCharacterHelper.IsWhitespace(doc, pos))
                         {
                             pos--;
                         }
                     }
                     else
                     {
-                        while (pos > 0 && TextCharacterHelper.IsPunctuation(doc, pos))
+                        // word motion
+                        bool onWord = TextCharacterHelper.IsWordChar(doc, pos);
+
+                        if (onWord)
                         {
-                            pos--;
+                            while (pos > 0 && TextCharacterHelper.IsWordChar(doc, pos))
+                            {
+                                pos--;
+                            }
+                        }
+                        else
+                        {
+                            while (pos > 0 && TextCharacterHelper.IsPunctuation(doc, pos))
+                            {
+                                pos--;
+                            }
                         }
                     }
-                }
 
-                if (pos > 0 || (pos == 0 && TextCharacterHelper.IsWhitespace(doc, 0)))
-                {
-                    pos++;
-                }
+                    if (pos > 0 || (pos == 0 && TextCharacterHelper.IsWhitespace(doc, 0)))
+                    {
+                        pos++;
+                    }
 
-                selection.SetRange(pos, pos);
+                    selection.SetRange(pos, pos);
+                }
             }
         }
     }

@@ -22,6 +22,9 @@ namespace vimword.Vimulator
         private readonly Dictionary<Constants.Modes, IVimMode> _modeMap;
         private readonly Microsoft.Office.Interop.Word.Application _app;
         private IVimMode _currentModeInstance;
+        private string _keyBuffer = "";
+        private int _currentLine = 1;
+        private int _currentColumn = 1;
 
         #region INotifyPropertyChanged Implementation
 
@@ -63,6 +66,8 @@ namespace vimword.Vimulator
             if (key == Keys.Escape)
             {
                 CurrentMode = Constants.Modes.NORMAL;
+                KeyBuffer = ""; // Clear key buffer on Escape
+                UpdateCursorPosition();
                 return true;
             }
 
@@ -73,8 +78,69 @@ namespace vimword.Vimulator
                 CurrentMode = result.NextMode.Value;
                 result.PostTransitionAction?.Invoke();
             }
+            
+            // Update cursor position after handling key
+            UpdateCursorPosition();
 
             return result.Handled;
+        }
+        
+        /// <summary>
+        /// Gets the current line number (1-based).
+        /// </summary>
+        public int CurrentLine
+        {
+            get => _currentLine;
+            private set
+            {
+                if (_currentLine != value)
+                {
+                    _currentLine = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Gets the current column number (1-based).
+        /// </summary>
+        public int CurrentColumn
+        {
+            get => _currentColumn;
+            private set
+            {
+                if (_currentColumn != value)
+                {
+                    _currentColumn = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Updates the cursor position from the Word application.
+        /// </summary>
+        public void UpdateCursorPosition()
+        {
+            try
+            {
+                if (_app?.Selection != null)
+                {
+                    // Get line number (1-based)
+                    int line = (int)_app.Selection.Information[WdInformation.wdFirstCharacterLineNumber];
+                    
+                    // Get column number (1-based)
+                    int column = (int)_app.Selection.Information[WdInformation.wdFirstCharacterColumnNumber];
+                    
+                    CurrentLine = line;
+                    CurrentColumn = column;
+                }
+            }
+            catch
+            {
+                // Silently ignore errors when accessing Word selection
+                // (can happen during certain Word operations)
+            }
         }
 
         #endregion
@@ -88,6 +154,22 @@ namespace vimword.Vimulator
             CurrentMode = mode;
             postTransition?.Invoke();
         }
+        
+        /// <summary>
+        /// Gets or sets the current key buffer to display in UI (e.g., "5w").
+        /// </summary>
+        public string KeyBuffer
+        {
+            get => _keyBuffer;
+            set
+            {
+                if (_keyBuffer != value)
+                {
+                    _keyBuffer = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         #endregion
 
@@ -100,6 +182,7 @@ namespace vimword.Vimulator
             _mode = Constants.Modes.NORMAL;
             _currentModeInstance = _modeMap[_mode];
             _currentModeInstance.OnEnter(this);
+            UpdateCursorPosition(); // Initialize cursor position
         }
 
         #endregion

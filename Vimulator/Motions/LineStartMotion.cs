@@ -11,11 +11,12 @@ namespace vimword.Vimulator.Motions
         public MotionDirection Direction => MotionDirection.Backward;
         public bool IncludesTarget => false;
 
-        public void Execute(Application app, bool extend = false)
+        public void Execute(Application app, bool extend = false, int count = 1)
         {
             var selection = app.Selection;
             
             // Move to the start of the current line
+            // Note: count doesn't affect this motion - it always goes to line start
             selection.HomeKey(WdUnits.wdLine, extend ? WdMovementType.wdExtend : WdMovementType.wdMove);
         }
     }
